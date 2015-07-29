@@ -1,5 +1,8 @@
+__author__ = 'marjoriesayer'
+
 import time
 import numpy as np
+import csv
 import sys
 # SK-learn libraries for learning.
 
@@ -19,6 +22,7 @@ from sklearn.metrics import classification_report
 days_of_week = {'Monday':0, 'Tuesday':1, 'Wednesday':2, 'Thursday':3, 'Friday':4, 'Saturday':5, 'Sunday':6 }
 districts = {'RICHMOND': 6, 'CENTRAL': 1, 'NORTHERN': 4, 'TARAVAL': 8, 'BAYVIEW': 0, 'INGLESIDE': 2, 'PARK': 5, 'MISSION': 3, 'TENDERLOIN': 9, 'SOUTHERN': 7}
 labels = {'RECOVERED VEHICLE': 24, 'SUICIDE': 31, 'FRAUD': 13, 'WEAPON LAWS': 38, 'ROBBERY': 25, 'ARSON': 0, 'SECONDARY CODES': 27, 'SEX OFFENSES FORCIBLE': 28, 'WARRANTS': 37, 'PROSTITUTION': 23, 'DRUG/NARCOTIC': 7, 'EMBEZZLEMENT': 9, 'TRESPASS': 34, 'LOITERING': 18, 'KIDNAPPING': 15, 'DRIVING UNDER THE INFLUENCE': 6, 'LARCENY/THEFT': 16, 'VANDALISM': 35, 'NON-CRIMINAL': 20, 'BURGLARY': 4, 'BAD CHECKS': 2, 'STOLEN PROPERTY': 30, 'EXTORTION': 10, 'SUSPICIOUS OCC': 32, 'PORNOGRAPHY/OBSCENE MAT': 22, 'LIQUOR LAWS': 17, 'FAMILY OFFENSES': 11, 'SEX OFFENSES NON FORCIBLE': 29, 'TREA': 33, 'GAMBLING': 14, 'BRIBERY': 3, 'VEHICLE THEFT': 36, 'FORGERY/COUNTERFEITING': 12, 'ASSAULT': 1, 'DRUNKENNESS': 8, 'MISSING PERSON': 19, 'DISORDERLY CONDUCT': 5, 'OTHER OFFENSES': 21, 'RUNAWAY': 26}
+print "label length", len(labels)
 x_mean =  -122.422042526
 x_std =  0.0244209517397
 y_mean =  37.7605806147
@@ -28,8 +32,7 @@ y_std =  0.0260142906993
 # output_component [0, 0, 0, 0, 0, 0, 0, 0.0, 0.0]
 output_list = []
 label_list = []
-#x_list = []
-#y_list = []
+test_list = []
 
 
 def date_worker(date, output_component):
@@ -41,7 +44,7 @@ def date_worker(date, output_component):
         output_component[3] = time_obj.tm_hour
         output_component[4] = time_obj.tm_min
     except:
-        print "date is:", date
+        print "date exception is:", date
     # print time_obj.tm_year, time_obj.tm_mon, time_obj.tm_mday, time_obj.tm_min
     return output_component
 
@@ -58,7 +61,7 @@ def label_worker(line, label_list):
     label_list.append(item)
     return label_list
 
-def coordinate_worker(line, output_component, counter):
+def coordinate_worker(line, output_component):
     x = float(line[-2])
     # print "x", x
     y = float(line[-1])
@@ -69,37 +72,72 @@ def coordinate_worker(line, output_component, counter):
 
 with open("../train.csv", 'r') as f:
     counter = 0
-
     for line in f:
         output_component = [0, 0, 0, 0, 0, 0, 0, 0.0, 0.0]
         line = line.rstrip()
         line = line.split(',')
         # print len(line)
         if counter > 0:
-
             date = line[0]
             output_component = date_worker(date, output_component)
             output_component = dayofweek_district_worker(line, output_component)
-            output_component = coordinate_worker(line, output_component, counter)
+            output_component = coordinate_worker(line, output_component)
             label_list = label_worker(line, label_list)
-
             output_list.append(output_component)
 
         counter += 1
+
+def make_test_data():
+    with open("../test-2.csv", 'r') as testf:
+        content = testf.readlines()
+        print "lines in testf", len(content)
+        counter = 0
+
+        for line in content:
+            output_component = [0, 0, 0, 0, 0, 0, 0, 0.0, 0.0]
+            line = line.rstrip()
+
+            line = line.split(',')
+
+            if counter > 0:
+                date = line[1]
+                output_component = date_worker(date, output_component)
+
+                output_component[5] = days_of_week[line[2]]
+                output_component[6] = districts[line[3]]
+                output_component = coordinate_worker(line, output_component)
+
+                test_list.append(output_component)
+
+            if counter == 0:
+                counter += 1
 
 
 all_data = np.asarray(output_list)
 all_label = np.asarray(label_list, int)
 
+make_test_data()
+all_test = np.asarray(test_list)
+print "all_test shape", all_test.shape
+
 shuffle = np.random.permutation(np.arange(all_data.shape[0]))
 X, Y = all_data[shuffle], all_label[shuffle]
 
+# test1 = []
+# for label in labels:
+#     result = np.where(Y==labels[label])
+#
+#     print "label, where", label, result[0] #extend([x,y])  vs append(x)
+#     if len(result[0]) == 0:
+#         print label
+
+
 print "shape", X.shape, Y.shape
 
-dev_data, dev_labels = X[500000:878049], Y[500000:878049]
-train_data, train_labels = X[:500000], Y[:500000]
-mini_train_data, mini_train_labels = X[:10000], Y[:10000]
-mini_dev_data, mini_dev_labels = X[500000:510000], Y[500000:510000]
+#dev_data, dev_labels = X[500000:878049], Y[500000:878049]
+#train_data, train_labels = X[500000:600000], Y[500000:600000]
+mini_train_data, mini_train_labels = X[:600000], Y[:600000]
+#mini_dev_data, mini_dev_labels = X[:100000], Y[:100000]
 
 # can't use MNB yet - need non-negative integer data
 '''
@@ -116,16 +154,27 @@ print "mnb ratio correct", total_right_mnb/float(len(mini_dev_labels))
 print mnb_f1
 '''
 
-logregr = LogisticRegression(penalty='l2', C=0.05)
+logregr = LogisticRegression(penalty='l2', C=0.05, tol=0.01)
 logregr.fit(mini_train_data, mini_train_labels)
 weights = logregr.coef_
-dev_predict = logregr.predict(mini_dev_data)
+dev_predict = logregr.predict(all_test)
 # f1_score = metrics.f1_score(mini_dev_labels, dev_predict)
-total_right = 0
-for i in range(len(mini_dev_labels)):
-    if dev_predict[i]==mini_dev_labels[i]:
-        total_right += 1
-print "LR ratio correct", total_right/float(len(mini_dev_labels))
+# total_right = 0
+# for i in range(len(mini_dev_labels)):
+#     if dev_predict[i]==mini_dev_labels[i]:
+#         total_right += 1
 
-# print f1_score
+output_matrix = logregr.predict_proba(all_test)
+print output_matrix.shape
+print logregr.classes_
+#print "LR ratio correct", total_right/float(len(mini_dev_labels))
+
+mycsvwriter = csv.writer(open('ml_watchers_submission.csv','wb'))
+for row in output_matrix:
+    mycsvwriter.writerow(row)
+# with open('ml_watchers_submission.csv', 'wb') as f:
+#     for row in output_matrix:
+#         f.write(row + "\n")
+#
+
 
