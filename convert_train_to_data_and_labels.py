@@ -12,28 +12,17 @@ from sklearn import metrics
 from sklearn.metrics import classification_report
 
 def main():
-    # Prepare data
+    ###########################################
+    # Prepare data and do feature engineering #
+    ###########################################
     fe = FeatureEngineering()
     fe.prepare_data('train.csv', 'test.csv') # test-2.csv"
 
-    #
-
-    '''all_data = np.asarray(output_list)
-    all_label = np.asarray(label_list, int)
-    all_test = np.asarray(test_list)
-    shuffle = np.random.permutation(np.arange(all_data.shape[0]))
-    X, Y = all_data[shuffle], all_label[shuffle]
-    print "shape", X.shape, Y.shape
-
-    #dev_data, dev_labels = X[500000:878049], Y[500000:878049]
-    #train_data, train_labels = X[500000:600000], Y[500000:600000]
-    mini_train_data, mini_train_labels = X[:600000], Y[:600000]
-    #mini_dev_data, mini_dev_labels = X[:100000], Y[:100000]
-    '''
-
+    ################
+    # Train models #
+    ################
     # can't use MNB yet - need non-negative integer data
-    '''
-    mnb = MultinomialNB(alpha = 0.01)
+    '''mnb = MultinomialNB(alpha = 0.01)
     mnb.fit(mini_train_data, mini_train_labels)
     mnb_predict = mnb.predict(mini_dev_data)
     mnb_f1 = metrics.f1_score(mini_dev_labels, mnb_predict)
@@ -42,8 +31,7 @@ def main():
         if mnb_predict[i]==mini_dev_labels[i]:
             total_right_mnb += 1
     print "mnb ratio correct", total_right_mnb/float(len(mini_dev_labels))
-    print mnb_f1
-    '''
+    print mnb_f1'''
 
     print 'Training logistic regression model'
     logregr = LogisticRegression(penalty='l2', C=0.05, tol=0.01)
@@ -61,7 +49,6 @@ def main():
     print output_matrix.shape
     print logregr.classes_
     print output_matrix[:10]
-    return
     #print "LR ratio correct", total_right/float(len(mini_dev_labels))
 
     print 'Generate CSV file with prediction on submission data'
