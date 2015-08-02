@@ -18,6 +18,11 @@ def main():
     fe = FeatureEngineering()
     fe.prepare_data('train.csv', 'test.csv') # test-2.csv"
 
+    ''' + Examples of how to access the data prepared in FeatureEngineering class
+    fe.train_labels, fe.train_data, fe.mini_train_data, fe.mini_label_data
+    fe.test_data, fe.test_labels
+    fe.submission_data -> this is the data we need to predict and submit'''
+
     ################
     # Train models #
     ################
