@@ -26,12 +26,14 @@ class FeatureEngineering:
         # Shuffle the data and divide it into train, mini_train, dev and test sets.
         self._shuffle_and_set_datasets(X, Y)
 
-        self.submission_data = []
+        submission_data = []
         with open(test_csv, 'r') as f:
             for line in csv.reader(f):
-                self.submission_data += [line]
+                submission_data += [line]
 
-        # Report status (remove later)
+        self.submission_data = np.asarray(submission_data)
+
+        # Report status
         print ' + Status report:'
         print '    - Train data and labels: %s - %s' % (self.train_data.shape, self.train_labels.shape)
         print '    - Mini train data and labels: %s - %s' % (self.mini_train_data.shape, self.mini_train_labels.shape)
@@ -41,7 +43,7 @@ class FeatureEngineering:
 
     # Method used to prepare data for the first time and perform all the required feature engineering. In subsequent
     # runs you only need to run the load_data() method.
-    def prepare_data(self, train_csv, test_csv):
+    def prepare_data(self, train_csv, test_csv, load_data = False):
         print 'Extracting training data'
         X, Y = self._extract_data(train_csv, True)
 
@@ -72,8 +74,9 @@ class FeatureEngineering:
         np.savetxt(train_csv, np.hstack((X, np.reshape(Y, (200,1)))), delimiter=',', fmt='%s')
         np.savetxt(test_csv, self.submission_data, delimiter=',', fmt='%s')
 
-        # Load all the data that was just prepared.
-        self.load_data(train_csv, test_csv)
+        if load_data:
+            print 'Load data that was just prepared'
+            self.load_data(train_csv, test_csv)
 
     # Internal method used to extract data from CSV file and convert feature vector
     def _extract_data(self, csv_path, is_labeled_data):
@@ -87,7 +90,7 @@ class FeatureEngineering:
             for line in csv.reader(f):
                 # Use this to skip header row
                 counter += 1
-                if counter == 0 or counter > 200: continue
+                if counter == 0: continue
 
                 try:
                     feature_values = []
@@ -128,6 +131,9 @@ class FeatureEngineering:
 
     # Shuffle and set train, mini_train, dev, and test datasets.
     def _shuffle_and_set_datasets(self, X, Y):
+        X = np.asarray(X)
+        Y = np.asarray(Y)
+
         # Initialize in variables in case the method is called more than once.
         np.random.seed(1023709456)
 
@@ -142,7 +148,8 @@ class FeatureEngineering:
     # Normalize date and convert it into a list of 5 elements: year, month, day, hour, minute.
     @staticmethod
     def _normalize_date(date, is_labeled_data):
-        format = "%Y-%m-%d %H:%M:%S" if is_labeled_data == True else "%m/%d/%Y %H:%M"
+        #format = "%Y-%m-%d %H:%M:%S" if is_labeled_data == True else "%m/%d/%Y %H:%M"
+        format = "%Y-%m-%d %H:%M:%S" #if is_labeled_data == True else "%m/%d/%Y %H:%M"
 
         time_obj = time.strptime(date, format)
         output = []

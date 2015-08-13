@@ -16,8 +16,9 @@ def main():
     # Prepare data and do feature engineering #
     ###########################################
     fe = FeatureEngineering()
-    fe.prepare_data('train.csv', 'test.csv')
-    #fe.load_data('train_processed.csv', 'test_processed.csv')
+    fe.prepare_data('train.csv', 'test.csv') # Can comment this out once we've run it once succesfully
+    fe.load_data('train_processed.csv', 'test_processed.csv')
+    return # Remove once we fixed issues with prepare_data()
 
     ''' + Examples of how to access the data prepared in FeatureEngineering class
     fe.train_labels, fe.train_data, fe.mini_train_data, fe.mini_label_data
