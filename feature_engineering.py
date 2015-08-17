@@ -102,8 +102,6 @@ class FeatureEngineering:
     times_of_day = ['Twilight', 'Morning', 'Afternoon', 'Night']
 
     labels = {'RECOVERED VEHICLE': 24, 'SUICIDE': 31, 'FRAUD': 13, 'WEAPON LAWS': 38, 'ROBBERY': 25, 'ARSON': 0, 'SECONDARY CODES': 27, 'SEX OFFENSES FORCIBLE': 28, 'WARRANTS': 37, 'PROSTITUTION': 23, 'DRUG/NARCOTIC': 7, 'EMBEZZLEMENT': 9, 'TRESPASS': 34, 'LOITERING': 18, 'KIDNAPPING': 15, 'DRIVING UNDER THE INFLUENCE': 6, 'LARCENY/THEFT': 16, 'VANDALISM': 35, 'NON-CRIMINAL': 20, 'BURGLARY': 4, 'BAD CHECKS': 2, 'STOLEN PROPERTY': 30, 'EXTORTION': 10, 'SUSPICIOUS OCC': 32, 'PORNOGRAPHY/OBSCENE MAT': 22, 'LIQUOR LAWS': 17, 'FAMILY OFFENSES': 11, 'SEX OFFENSES NON FORCIBLE': 29, 'TREA': 33, 'GAMBLING': 14, 'BRIBERY': 3, 'VEHICLE THEFT': 36, 'FORGERY/COUNTERFEITING': 12, 'ASSAULT': 1, 'DRUNKENNESS': 8, 'MISSING PERSON': 19, 'DISORDERLY CONDUCT': 5, 'OTHER OFFENSES': 21, 'RUNAWAY': 26}
-    train_data, train_labels, mini_train_data, mini_label_data, dev_data, dev_labels, test_data, test_labels = None, None, None, None, None, None, None, None
-    submission_data = None
 
     # We should add any code we might need to initialize
     def __init__(self):
@@ -127,27 +125,21 @@ class FeatureEngineering:
         # TODO: How to deal with this?
         #self.features.add_feature('Address')
 
-    # Loads all the data that was previously prepared by the prepare_data() method.
-    def load_data(self):
+    # Loads all the train data that was previously prepared by the prepare_data() method.
+    def load_train_data(self):
         if not os.path.isfile(self.train_processed_csv) or not os.path.isfile(self.test_processsed_csv):
             print 'FAILURE: You need to call the prepare_data() method first to generate processed CSV files.'
             return
 
+        print 'Loading train data'
         X, Y = [], []
         with open(self.train_processed_csv, 'r') as f:
             for line in csv.reader(f):
                 X += [line[:-1]]
                 Y += [line[-1]]
 
-        # Shuffle the data and divide it into train, mini_train, dev and test sets.
+        print 'Shuffle the data and divide it into train, mini_train, dev and test sets'
         self._shuffle_and_set_datasets(X, Y)
-
-        submission_data = []
-        with open(self.test_processsed_csv, 'r') as f:
-            for line in csv.reader(f):
-                submission_data += [line]
-
-        self.submission_data = np.asarray(submission_data)
 
         # Report status
         print ' + Status report:'
@@ -155,6 +147,20 @@ class FeatureEngineering:
         print '    - Mini train data and labels: %s - %s' % (self.mini_train_data.shape, self.mini_train_labels.shape)
         print '    - Dev data and labels: %s - %s' % (self.dev_data.shape, self.dev_labels.shape)
         print '    - Test data and labels: %s - %s' % (self.test_data.shape, self.test_labels.shape)
+
+    # Loads all the test data that was previously prepared by the prepare_data() method.
+    def load_test_data(self):
+        print 'Loading test (submission) data'
+        self.submission_data = []
+        with open(self.test_processsed_csv, 'r') as f:
+            for line in csv.reader(f):
+                self.submission_data += [line]
+
+        print 'Converting test data into nparray'
+        self.submission_data = np.asarray(self.submission_data)
+
+        # Report status
+        print ' + Status report:'
         print '    - Submission data:', self.submission_data.shape
 
     # Method used to prepare data for the first time and perform all the required feature engineering. In subsequent
@@ -203,7 +209,7 @@ class FeatureEngineering:
             del self.streets_2[self.streets_2.index('')]
             self.streets_2 += ['']
 
-        print 'Starting to process all rows'
+        print 'Starting to extrad data from all rows'
         count = 0
         for line in data:
             try:
@@ -239,7 +245,7 @@ class FeatureEngineering:
 
                 count += 1
                 if count % 50000 == 0: print ' >>> ' + str(count)
-                '''if count > 1000:
+                '''if count > 50000:
                     print 'Done with 100K rows'
                     break'''
             except Exception as inst:
@@ -270,7 +276,7 @@ class FeatureEngineering:
             # Now run SVD on those features to reduce the dimensionality
             self.svd = TruncatedSVD(n_components=20, random_state=42142)
             X_address = self.svd.fit_transform(X_address)
-            #print sum(self.svd.explained_variance_ratio_)
+            #print 'Variance explained by SVD: %s' % sum(self.svd.explained_variance_ratio_)
 
             # TODO: Save mean and std for each numerical feature so we can change back later if we want to....
             #print scaler.inverse_transform(X2[0])
@@ -295,7 +301,7 @@ class FeatureEngineering:
     # Shuffle and set train, mini_train, dev, and test datasets.
     def _shuffle_and_set_datasets(self, X, Y):
         X = np.asarray(X, dtype=float)
-        Y = np.asarray(Y)
+        Y = np.asarray(Y, dtype=float)
 
         # Initialize in variables in case the method is called more than once.
         np.random.seed(1023709456)
@@ -307,6 +313,16 @@ class FeatureEngineering:
         self.mini_train_data, self.mini_train_labels = X[:10000], Y[:10000]
         self.dev_data, self.dev_labels = X[580000:730000], Y[580000:730000]
         self.test_data, self.test_labels = X[730000:], Y[730000:]
+
+    def delete_train_data(self):
+        self.train_data = None
+        self.train_labels = None
+        self.mini_train_data = None
+        self.mini_train_labels = None
+        self.dev_data = None
+        self.dev_labels = None
+        self.test_data = None
+        self.test_labels = None
 
     # Normalize date and convert it into a list of 5 elements: year, month, day, hour, minute.
     def _extract_datetime_features(self, date, is_training_data):

@@ -1,5 +1,7 @@
 import csv
 from feature_engineering import FeatureEngineering
+import time
+from threading import Thread
 # SK-learn libraries for learning.
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import LogisticRegression
@@ -16,14 +18,28 @@ def main():
     # Prepare data and do feature engineering #
     ###########################################
     fe = FeatureEngineering()
-    fe.prepare_data('train.csv', 'test.csv') # Can comment this out once we've run it once succesfully
-    fe.load_data('train_processed.csv', 'test_processed.csv')
-    return # Remove once we fixed issues with prepare_data()
+    #fe.prepare_data('train.csv', 'test.csv') # Can comment this out once we've run it once succesfully
+    fe.load_train_data()
+    # If you're hitting memory issues, uncomment this and only call it after calling fe.load_test_data(). However, it
+    # doesn't seem to help much.
+    fe.load_test_data()
 
-    ''' + Examples of how to access the data prepared in FeatureEngineering class
-    fe.train_labels, fe.train_data, fe.mini_train_data, fe.mini_label_data
-    fe.test_data, fe.test_labels
-    fe.submission_data -> this is the data we need to predict and submit'''
+    # Examples of how to access the data
+    print fe.train_data.shape
+    print fe.train_labels.shape
+    print fe.mini_train_data.shape
+    print fe.mini_train_labels.shape
+    print fe.dev_data.shape
+    print fe.dev_labels.shape
+    print fe.test_data.shape
+    print fe.test_labels.shape
+    print fe.submission_data.shape # Loaded by load_test_data()
+
+    #time.sleep(15) # Used for testing memory consumption
+    #print 'Testing of delete method'
+    #fe.delete_train_data()
+    #time.sleep(15)
+    return
 
     ################
     # Train models #
