@@ -157,7 +157,7 @@ class FeatureEngineering:
                 self.submission_data += [line]
 
         print 'Converting test data into nparray'
-        self.submission_data = np.asarray(self.submission_data)
+        self.submission_data = np.asarray(self.submission_data, dtype=float)
 
         # Report status
         print ' + Status report:'
@@ -209,7 +209,7 @@ class FeatureEngineering:
             del self.streets_2[self.streets_2.index('')]
             self.streets_2 += ['']
 
-        print 'Starting to extrad data from all rows'
+        print 'Starting to extract data from all rows'
         count = 0
         for line in data:
             try:
