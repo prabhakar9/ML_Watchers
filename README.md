@@ -48,4 +48,4 @@ Finally, we used the sklearn.preprocessing.StandardScaler to do feature scaling 
 
 These are the features we were left with after feature engineering has been done:
 
-![alt text](/features.jpg "#NBAFinals2015")
+![alt text](/features.jpg "Features")

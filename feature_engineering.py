@@ -146,7 +146,7 @@ class FeatureEngineering:
         print '    - Train data and labels: %s - %s' % (self.train_data.shape, self.train_labels.shape)
         print '    - Mini train data and labels: %s - %s' % (self.mini_train_data.shape, self.mini_train_labels.shape)
         print '    - Dev data and labels: %s - %s' % (self.dev_data.shape, self.dev_labels.shape)
-        print '    - Test data and labels: %s - %s' % (self.test_data.shape, self.test_labels.shape)
+        print '    - Test data and labels: %s - %s\n' % (self.test_data.shape, self.test_labels.shape)
 
     # Loads all the test data that was previously prepared by the prepare_data() method.
     def load_test_data(self):
@@ -162,6 +162,7 @@ class FeatureEngineering:
         # Report status
         print ' + Status report:'
         print '    - Submission data:', self.submission_data.shape
+        print
 
     # Method used to prepare data for the first time and perform all the required feature engineering. In subsequent
     # runs you only need to run the load_data() method.
