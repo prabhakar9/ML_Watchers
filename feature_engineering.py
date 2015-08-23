@@ -105,7 +105,7 @@ class FeatureEngineering:
 
     # We should add any code we might need to initialize
     def __init__(self):
-        print 'Initializing'
+        print 'Initializing Feature Engineering'
 
         self.train_processed_csv = 'train_processed.csv'
         self.test_processsed_csv = 'test_processed.csv'
@@ -131,7 +131,7 @@ class FeatureEngineering:
             print 'FAILURE: You need to call the prepare_data() method first to generate processed CSV files.'
             return
 
-        print 'Loading train data'
+        print 'Loading train data and creating data sets'
         X, Y = [], []
         with open(self.train_processed_csv, 'r') as f:
             for line in csv.reader(f):
@@ -147,6 +147,7 @@ class FeatureEngineering:
         print '    - Mini train data and labels: %s - %s' % (self.mini_train_data.shape, self.mini_train_labels.shape)
         print '    - Dev data and labels: %s - %s' % (self.dev_data.shape, self.dev_labels.shape)
         print '    - Test data and labels: %s - %s\n' % (self.test_data.shape, self.test_labels.shape)
+        print '    - Crime data and labels: %s - %s\n' % (self.crime_data.shape, self.crime_labels.shape)
 
     # Loads all the test data that was previously prepared by the prepare_data() method.
     def load_test_data(self):
@@ -310,16 +311,20 @@ class FeatureEngineering:
         # Shuffle the data and divide it into train, mini_train, dev and test sets.
         shuffle = np.random.permutation(np.arange(X.shape[0]))
         X, Y = X[shuffle], Y[shuffle]
+        print "Creating Crime, Train, Test, Dev data sets"
+        self.crime_data, self.crime_labels = X, Y
         self.train_data, self.train_labels = X[:580000], Y[:580000]
         self.mini_train_data, self.mini_train_labels = X[:10000], Y[:10000]
         self.dev_data, self.dev_labels = X[580000:730000], Y[580000:730000]
         self.test_data, self.test_labels = X[730000:], Y[730000:]
-
+        
     def delete_train_data(self):
+        self.crime_data = None
         self.train_data = None
         self.train_labels = None
         self.mini_train_data = None
         self.mini_train_labels = None
+        self.crime_labels = None
         self.dev_data = None
         self.dev_labels = None
         self.test_data = None
