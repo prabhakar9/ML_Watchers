@@ -1,0 +1,368 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "#San Francisco Crime Prediction \n",
+    "\n",
+    "We are involved in the kaggle.com Crime Prediction contest. We are using the data provided about crimes that occurred in San Francisco from 2011 to 2015. The data are variations on time and location, and the labels on the training set are 39 different crimes. \n",
+    "\n",
+    "To solve this problem we use various models and feature engineering. "
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "##Initial Attempt\n",
+    "\n",
+    "To get on the leaderboard, we did basic feature extraction and normalization, and used a logistric regression model. \n",
+    "\n",
+    "###Initial Feature Engineering Summary\n",
+    "\n",
+    "These are the features we get in both training and test data sets.\n",
+    "\n",
+    "| Date | DayOfWeek | PdDistrict | Address | Longitude | Latitude |\n",
+    "|---|---|---|---|---|---|---|---|\n",
+    "| 2015-05-10 23:59:00 | Sunday | BAYVIEW | 2000 Block of THOMAS AV | -122.3995877042 | 37.7350510104 |\n",
+    "\n",
+    "For the initial attempt, we immediate made these modifications: \n",
+    "\n",
+    "* Semi-normalize years: subtract lowest year, 2011, so that year numbers are from 0 to 4. \n",
+    "* Separate time information into year, month, day, time of day, day of week\n",
+    "* Normalize latitude and longitude (use (value - mean)/standard deviation)\n",
+    "\n",
+    "And chose a logistic regression model for these reasons: \n",
+    "* Predicting categorical dependent variable\n",
+    "* Relatively large number of samples, not so many features\n",
+    "* Mixture of categorical and continuous data\n",
+    "* Data with obvious correlation (so linear regression would be worse)\n",
+    "* Non-normally distributed data\n",
+    "\n",
+    "The results of this attempt are summarized here: \n",
+    "\n",
+    "|  Model | Accuracy | Train Time | Kaggle Score |\n",
+    "|---|---|---|---|---|---|---|---|\n",
+    "| Logistic Regression | 31% | few minutes| 84th |\n",
+    "| Logistic Regression | 30%| few minutes | 105th |\n",
+    "\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "##Data Exploration\n",
+    "\n",
+    "SAFYRE? \n",
+    "\n",
+    "Histograms, clustering analysis for decision points and also binarizing/discretizing categorical data"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Feature Engineering: Going Deeper\n",
+    "\n",
+    "The initial features shown in the table above are converted into the features described below. The first 6 are based on **Date**, while the last 3 are based on **Address** (more details in sections below).\n",
+    " \n",
+    "1. **Year**\n",
+    "2. **Month** - Value between 1-12\n",
+    "3. **Day of Month** - Value between 1-31\n",
+    "4. **Hour** - Value between 0-23\n",
+    "5. **Minute of Day** - Value between 0-1439. Calculated by the following formula: ```(hour * 60) + minute``` \n",
+    "6. **Time of Day** - Categorical feature with the following possible values: Twilight (12 am to 6 am), Morning (6 am to 12 pm), Afternoon (12 pm to 6 pm), Night (6 pm to 12 am)\n",
+    "7. **Day of Week** - Categorical feature with 7 distinct values: Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday.\n",
+    "8. **District** - Categorical feature with 10 dictinct values: NORTHERN, PARK, INGLESIDE, BAYVIEW, RICHMOND, CENTRAL, TARAVAL, TENDERLOIN, MISSION, SOUTHERN.\n",
+    "9. **X** - X coordinates as float\n",
+    "10. **Y** - Y coordinates as float\n",
+    "11. **Block** - Categorical variable containing the block number (if not available it's assigned default/empty category). There are 85 distinct values.\n",
+    "12. **Street 1** - Categorical variable containing the first street/avenue/etc. There are 2033 distinct values.\n",
+    "13. **Street 2** - Categorical variable containing the second street/avenue/etc (if not available it's assigned default/empty category). There are 1694 distinct values. \n",
+    " \n",
+    "The categorical features, with the exception of the last 3 which we'll discuss later, are converted to dummy variables. That causes the number of features to expand based on the number of distinct values. For example, the **Time of Day** feature is converted to the following 4 features, each with possible values of 0 or 1:\n",
+    "\n",
+    "* **IsTwilight**\n",
+    "* **IsMorning**\n",
+    "* **IsAfternoon**\n",
+    "* **IsNight**\n",
+    "\n",
+    "As for the features based on **Address** (the last 3), they contained too many distinct values which made it impractical to use with our computers. As such, we first converted each one to a int value (Category1 = 0, Category2, 1, etc.) and then we used the sklearn.preprocessing.OneHotEncoder to convert all of them together into a sparse matrix which made it possible to hold in memory. Afterwards, we reduced the dimensionality to 20 columns using a truncated SVD (aka LSA). We managed to retain more than 44% of the variance.\n",
+    "\n",
+    "Finally, we used the sklearn.preprocessing.StandardScaler to do feature scaling on all the numerical features.\n",
+    "\n",
+    "## Final set of Features \n",
+    "\n",
+    "These are the features we were left with after feature engineering has been done:\n",
+    "\n",
+    "![alt text](features.jpg \"Features\")\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Initializing\n",
+      "Loading train data\n",
+      "Shuffle the data and divide it into train, mini_train, dev and test sets\n",
+      " + Status report:\n",
+      "    - Train data and labels: (580000L, 48L) - (580000L,)\n",
+      "    - Mini train data and labels: (10000L, 48L) - (10000L,)\n",
+      "    - Dev data and labels: (150000L, 48L) - (150000L,)\n",
+      "    - Test data and labels: (148049L, 48L) - (148049L,)\n",
+      "\n",
+      "Loading test (submission) data\n",
+      "Converting test data into nparray\n",
+      " + Status report:\n",
+      "    - Submission data: (884262L, 48L)\n",
+      "\n",
+      "(580000L, 48L)\n",
+      "(580000L,)\n",
+      "(10000L, 48L)\n",
+      "(10000L,)\n",
+      "(150000L, 48L)\n",
+      "(150000L,)\n",
+      "(148049L, 48L)\n",
+      "(148049L,)\n",
+      "(884262L, 48L)\n",
+      "['NORTHERN', 'PARK', 'INGLESIDE', 'BAYVIEW', 'RICHMOND', 'CENTRAL', 'TARAVAL', 'TENDERLOIN', 'MISSION', 'SOUTHERN']\n",
+      "['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']\n",
+      "['Twilight', 'Morning', 'Afternoon', 'Night']\n",
+      "{'VEHICLE THEFT': 36, 'SUICIDE': 31, 'WEAPON LAWS': 38, 'VANDALISM': 35, 'RECOVERED VEHICLE': 24, 'SECONDARY CODES': 27, 'WARRANTS': 37, 'DRUNKENNESS': 8, 'PROSTITUTION': 23, 'DRUG/NARCOTIC': 7, 'EMBEZZLEMENT': 9, 'TRESPASS': 34, 'FRAUD': 13, 'DRIVING UNDER THE INFLUENCE': 6, 'LOITERING': 18, 'ROBBERY': 25, 'GAMBLING': 14, 'BURGLARY': 4, 'OTHER OFFENSES': 21, 'FORGERY/COUNTERFEITING': 12, 'SUSPICIOUS OCC': 32, 'MISSING PERSON': 19, 'LIQUOR LAWS': 17, 'ARSON': 0, 'SEX OFFENSES NON FORCIBLE': 29, 'KIDNAPPING': 15, 'ASSAULT': 1, 'BRIBERY': 3, 'SEX OFFENSES FORCIBLE': 28, 'STOLEN PROPERTY': 30, 'TREA': 33, 'BAD CHECKS': 2, 'FAMILY OFFENSES': 11, 'PORNOGRAPHY/OBSCENE MAT': 22, 'NON-CRIMINAL': 20, 'DISORDERLY CONDUCT': 5, 'EXTORTION': 10, 'RUNAWAY': 26, 'LARCENY/THEFT': 16}\n"
+     ]
+    }
+   ],
+   "source": [
+    "from feature_engineering import *\n",
+    "\n",
+    "###########################################\n",
+    "# Prepare data and do feature engineering #\n",
+    "###########################################\n",
+    "fe = FeatureEngineering()\n",
+    "# Used to prepare the data the very first time. This does all of the feature engineering and generates the following\n",
+    "# two CSV files: train_processed.csv and test_processed.csv. After it's been run once on any computer, there's no \n",
+    "# need to run it again if you just copy those files here.\n",
+    "#fe.prepare_data('train.csv', 'test.csv')\n",
+    "\n",
+    "# These methods fetch the pre-processed data stored in train_processed.csv and test_processed.csv.\n",
+    "fe.load_train_data()\n",
+    "# If your PC has less than 8 GB of RAM you might run itno memory issues. If so, you might want to comment this out \n",
+    "# until you need the data later.\n",
+    "fe.load_test_data()\n",
+    "\n",
+    "# Examples of how to access the data (remove later)\n",
+    "print fe.train_data.shape\n",
+    "print fe.train_labels.shape\n",
+    "print fe.mini_train_data.shape\n",
+    "print fe.mini_train_labels.shape\n",
+    "print fe.dev_data.shape\n",
+    "print fe.dev_labels.shape\n",
+    "print fe.test_data.shape\n",
+    "print fe.test_labels.shape\n",
+    "print fe.submission_data.shape # Loaded by load_test_data()\n",
+    "\n",
+    "# Examples of how to access categorical features (except Address) and labels.\n",
+    "print fe.districts\n",
+    "print fe.days_of_week\n",
+    "print fe.times_of_day\n",
+    "print fe.labels"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "##Error Analysis\n",
+    "\n",
+    "We evaluate a model using: \n",
+    "* loss function (this is how the kaggle competition scores our submissions)\n",
+    "* f1 score\n",
+    "* classification report (precision, recall)\n",
+    "* confusion matrix \n",
+    "\n",
+    "Given a model, test set and labels, the following function performs an error analysis. "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [],
+   "source": [
+    "from sklearn.metrics import confusion_matrix\n",
+    "from sklearn import metrics\n",
+    "from sklearn.metrics import classification_report\n",
+    "\n",
+    "def print_confusion_heatmap(cm):\n",
+    "    plt.figure(figsize = (15.0, 10.0))\n",
+    "    plt.matshow(cm)\n",
+    "    plt.title('Confusion matrix')\n",
+    "    plt.colorbar()\n",
+    "    plt.ylabel('True label')\n",
+    "    plt.xlabel('Predicted label')\n",
+    "    plt.show()\n",
+    "\n",
+    "def loss_function(probs, samples, classes, labels):\n",
+    "    logloss = 0\n",
+    "    for i in range(len(labels)):\n",
+    "        index = fe.labels[labels[i]] # this tells us which probability to take log of \n",
+    "        p = probs[i, index]\n",
+    "        # to avoid extremes of log function: \n",
+    "        pn = max(min(p,1-10^(-15)),10^(-15))\n",
+    "        newpart = -(np.log(pn))/samples\n",
+    "        logloss += newpart\n",
+    "    return logloss\n",
+    "        \n",
+    "\n",
+    "def error_analysis(model, data, labels):\n",
+    "    predicted = model.predict(data)\n",
+    "    f1_score = metrics.f1_score(predicted, labels)\n",
+    "    cm = confusion_matrix(testlabels, prediction)\n",
+    "    samples = data.shape[0] # number of samples - need for loss fcn\n",
+    "    probs = model.predict_proba(data) # predicted probabilities of all classes, all samples\n",
+    "    classes = probs.shape[1] # number of classes, need for loss fcn\n",
+    "    loss = loss_function(probs, samples, classes, labels)\n",
+    "    \n",
+    "    print \"F1 score: %.5f\" % f1_score\n",
+    "    print \"Cost Function: %.5f\" % loss\n",
+    "    print \"Classification Report: \"\n",
+    "    classnames = [name for name in fe.labels]\n",
+    "    print(classification_report(labels, predicted, target_names=classnames))\n",
+    "    print_confusion_heatmap(cm)\n",
+    "    "
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "##Variations on Models\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "###Logistic Regression Experiments"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": true
+   },
+   "outputs": [],
+   "source": [
+    "lr = LogisticRegression(C=0.1, tol = 0.01)\n",
+    "lr.fit(crimeX, crime_labels)\n",
+    "print \"Completed the training\""
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "###Neural Net Experiments"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "##Ensemble Approaches\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "###Random Forest Experiments"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": true
+   },
+   "outputs": [],
+   "source": [
+    "clf = RandomForestClassifier(n_estimators=39, class_weight = \"auto\")\n",
+    "clf.fit(crimeX, crime_labels)\n",
+    "print \"Random Forest Training Completed\""
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "###Simple Logistic Regression and Random Forest Ensemble"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": true
+   },
+   "outputs": [],
+   "source": [
+    "lr_probs = lr.predict_proba(mini_testX)\n",
+    "clf_probs = clf.predict_proba(mini_testX)\n",
+    "av_probs = (lr_probs + clf_probs)/2\n",
+    "print av_probs.shape"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "##Results and Conclusions\n",
+    "\n",
+    "ALL - let's merge what we have. "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": true
+   },
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 2",
+   "language": "python",
+   "name": "python2"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 2
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython2",
+   "version": "2.7.10"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 0
+}
