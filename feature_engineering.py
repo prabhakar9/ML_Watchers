@@ -146,7 +146,7 @@ class FeatureEngineering:
         print '    - Train data and labels: %s - %s' % (self.train_data.shape, self.train_labels.shape)
         print '    - Mini train data and labels: %s - %s' % (self.mini_train_data.shape, self.mini_train_labels.shape)
         print '    - Dev data and labels: %s - %s' % (self.dev_data.shape, self.dev_labels.shape)
-        print '    - Test data and labels: %s - %s\n' % (self.test_data.shape, self.test_labels.shape)
+        print '    - Test data and labels: %s - %s' % (self.test_data.shape, self.test_labels.shape)
         print '    - Crime data and labels: %s - %s\n' % (self.crime_data.shape, self.crime_labels.shape)
 
     # Loads all the test data that was previously prepared by the prepare_data() method.
@@ -159,6 +159,7 @@ class FeatureEngineering:
 
         print 'Converting test data into nparray'
         self.submission_data = np.asarray(self.submission_data, dtype=float)
+
 
         # Report status
         print ' + Status report:'
